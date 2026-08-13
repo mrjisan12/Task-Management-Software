@@ -36,6 +36,17 @@
 
                 <div class="form-grid">
                     <div class="field">
+                        <label class="label" for="name">Name</label>
+                        <input class="input @error('name') error-input @enderror" id="name" name="name" value="{{ old('name', $user->name) }}" required>
+                        @error('name') <div class="error">{{ $message }}</div> @enderror
+                    </div>
+
+                    <div class="field">
+                        <span class="label">Email</span>
+                        <div class="readonly-field">{{ $user->email }}</div>
+                    </div>
+
+                    <div class="field">
                         <label class="label" for="designation">Designation</label>
                         <input class="input @error('designation') error-input @enderror" id="designation" name="designation" value="{{ old('designation', $profile->designation) }}">
                         @error('designation') <div class="error">{{ $message }}</div> @enderror

@@ -43,6 +43,7 @@ class ProfileController extends Controller
         $profile = $this->profile($request);
 
         $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
             'profile_photo' => ['nullable', 'image', 'max:2048'],
             'age' => ['nullable', 'integer', 'min:13', 'max:120'],
             'designation' => ['nullable', 'string', 'max:255'],
@@ -50,6 +51,12 @@ class ProfileController extends Controller
             'location' => ['nullable', 'string', 'max:255'],
             'bio' => ['nullable', 'string', 'max:1000'],
         ]);
+
+        $request->user()->update([
+            'name' => $validated['name'],
+        ]);
+
+        unset($validated['name']);
 
         if ($request->hasFile('profile_photo')) {
             if ($profile->profile_photo_path) {

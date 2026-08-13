@@ -10,6 +10,13 @@
         'priority' => $task->priority?->name,
         'status' => $task->status?->name,
         'url' => route('tasks.show', $task),
+        'edit_url' => route('tasks.edit', $task),
+        'delete_url' => route('tasks.destroy', $task),
+        'assignees' => $task->assignments
+            ->map(fn ($assignment) => $assignment->assignee?->name ?? $assignment->team?->name)
+            ->filter()
+            ->values()
+            ->join(', '),
     ];
 @endphp
 
@@ -21,6 +28,7 @@
                 tab: 'pending',
                 now: Date.now(),
                 pending: @js($pendingTasks->map($formatTask)->values()),
+                sent: @js($sentTasks->map($formatTask)->values()),
                 completed: @js($completedTasks->map($formatTask)->values()),
                 init() {
                     setInterval(() => this.now = Date.now(), 1000);
@@ -99,6 +107,9 @@
                     <button class="tab-button" type="button" x-bind:class="{ active: tab === 'pending' }" x-on:click="tab = 'pending'">
                         Pending <span x-text="'(' + pending.length + ')'"></span>
                     </button>
+                    <button class="tab-button" type="button" x-bind:class="{ active: tab === 'sent' }" x-on:click="tab = 'sent'">
+                        Sent <span x-text="'(' + sent.length + ')'"></span>
+                    </button>
                     <button class="tab-button" type="button" x-bind:class="{ active: tab === 'completed' }" x-on:click="tab = 'completed'">
                         Completed <span x-text="'(' + completed.length + ')'"></span>
                     </button>
@@ -138,6 +149,44 @@
                 </template>
 
                 <p class="subtitle" x-show="pending.length === 0">No pending tasks right now.</p>
+            </div>
+
+            <div class="task-list" x-show="tab === 'sent'" x-cloak>
+                <template x-for="task in sent" :key="task.id">
+                    <div class="task-card sent-card">
+                        <a class="task-card-main" :href="task.url">
+                            <span class="avatar sm">
+                                <template x-if="task.creator_photo">
+                                    <img :src="task.creator_photo" :alt="task.creator || 'Assigner'">
+                                </template>
+                                <template x-if="! task.creator_photo">
+                                    <span x-text="task.creator_initial || 'U'"></span>
+                                </template>
+                            </span>
+                            <div>
+                                <strong class="task-card-title" x-text="task.title"></strong>
+                                <div class="task-card-meta">
+                                    <span x-text="'Assigned to ' + (task.assignees || 'No assignee')"></span>
+                                    <template x-if="task.due_at">
+                                        <span x-text="'Due ' + task.due_at"></span>
+                                    </template>
+                                </div>
+                            </div>
+                        </a>
+                        <div class="task-card-badges sent-actions">
+                            <span class="badge" x-bind:class="priorityClass(task.priority)" x-text="task.priority || 'Priority'"></span>
+                            <span class="badge" x-bind:class="{ success: (task.status || '').toLowerCase() === 'completed', warning: (task.status || '').toLowerCase() !== 'completed' }" x-text="task.status || 'Pending'"></span>
+                            <a class="button secondary compact-button" :href="task.edit_url">Edit</a>
+                            <form method="POST" :action="task.delete_url" x-on:submit="if (! confirm('Delete this task?')) $event.preventDefault()">
+                                @csrf
+                                @method('DELETE')
+                                <button class="button danger compact-button" type="submit">Delete</button>
+                            </form>
+                        </div>
+                    </div>
+                </template>
+
+                <p class="subtitle" x-show="sent.length === 0">No sent tasks yet.</p>
             </div>
 
             <div class="task-list" x-show="tab === 'completed'" x-cloak>

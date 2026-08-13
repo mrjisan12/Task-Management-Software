@@ -6,6 +6,7 @@ use App\Models\Task;
 use App\Models\TaskCategory;
 use App\Models\TaskPriority;
 use App\Models\TaskStatus;
+use App\Models\Team;
 use App\Models\User;
 use App\Services\TaskCompletionService;
 use App\Services\TaskService;
@@ -43,9 +44,18 @@ class TaskController extends Controller
             ->limit(50)
             ->get();
 
+        $sentTasks = Task::query()
+            ->with(['creator.profile', 'status', 'priority', 'team', 'assignments.assignee', 'assignments.team'])
+            ->forCompany($company->id)
+            ->where('created_by', $request->user()->id)
+            ->latest()
+            ->limit(50)
+            ->get();
+
         return view('employee.tasks.index', [
             'company' => $company,
             'pendingTasks' => $pendingTasks,
+            'sentTasks' => $sentTasks,
             'completedTasks' => $completedTasks,
         ]);
     }
@@ -62,16 +72,7 @@ class TaskController extends Controller
 
         return view('employee.tasks.create', [
             'company' => $company,
-            'users' => User::query()
-                ->whereHas('companyMemberships', fn ($query) => $query
-                    ->where('company_id', $company->id)
-                    ->where('status', 'active'))
-                ->orderBy('name')
-                ->get(),
-            'teams' => $company->teams()->where('is_active', true)->orderBy('name')->get(),
-            'statuses' => TaskStatus::query()->where(fn ($query) => $query->where('company_id', $company->id)->orWhereNull('company_id'))->where('is_active', true)->orderBy('sort_order')->get(),
-            'priorities' => TaskPriority::query()->where(fn ($query) => $query->where('company_id', $company->id)->orWhereNull('company_id'))->where('is_active', true)->orderBy('sort_order')->get(),
-            'categories' => TaskCategory::query()->where('company_id', $company->id)->where('is_active', true)->orderBy('name')->get(),
+            ...$this->formData($company->id),
         ]);
     }
 
@@ -101,6 +102,71 @@ class TaskController extends Controller
             ->with('status', 'Task created successfully.');
     }
 
+    public function edit(Request $request, Task $task): View
+    {
+        $this->authorize('update', $task);
+
+        return view('employee.tasks.edit', [
+            'task' => $task->load(['assignments.assignee', 'assignments.team']),
+            'company' => $task->company,
+            ...$this->formData($task->company_id),
+        ]);
+    }
+
+    public function update(Request $request, Task $task): RedirectResponse
+    {
+        $this->authorize('update', $task);
+
+        $validated = $request->validate($this->taskRules());
+
+        $this->ensureEditableCompanyTarget($task->company_id, $validated['assignee_user_id'] ?? null, $validated['assignee_team_id'] ?? null);
+
+        $task->update([
+            'team_id' => $validated['team_id'] ?? null,
+            'task_priority_id' => $validated['task_priority_id'] ?? null,
+            'task_category_id' => $validated['task_category_id'] ?? null,
+            'title' => $validated['title'],
+            'description' => $validated['description'] ?? null,
+            'due_at' => $validated['due_at'] ?? null,
+            'estimated_minutes' => $validated['estimated_minutes'] ?? null,
+        ]);
+
+        $task->assignments()->delete();
+
+        if (! empty($validated['assignee_user_id'])) {
+            $task->assignments()->create([
+                'assignee_user_id' => $validated['assignee_user_id'],
+                'assigned_by' => $request->user()->id,
+                'status' => 'assigned',
+                'assigned_at' => now(),
+            ]);
+        }
+
+        if (! empty($validated['assignee_team_id'])) {
+            $task->assignments()->create([
+                'assignee_team_id' => $validated['assignee_team_id'],
+                'assigned_by' => $request->user()->id,
+                'status' => 'assigned',
+                'assigned_at' => now(),
+            ]);
+        }
+
+        return redirect()
+            ->route('tasks.index')
+            ->with('status', 'Task updated successfully.');
+    }
+
+    public function destroy(Task $task): RedirectResponse
+    {
+        $this->authorize('delete', $task);
+
+        $task->delete();
+
+        return redirect()
+            ->route('tasks.index')
+            ->with('status', 'Task deleted successfully.');
+    }
+
     public function show(Request $request, Task $task): View
     {
         $this->authorize('view', $task);
@@ -123,5 +189,72 @@ class TaskController extends Controller
         return redirect()
             ->route('tasks.show', $task)
             ->with('status', 'Task completed successfully.');
+    }
+
+    private function taskRules(): array
+    {
+        return [
+            'title' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string'],
+            'assignee_user_id' => ['nullable', 'integer', 'exists:users,id'],
+            'assignee_team_id' => ['nullable', 'integer', 'exists:teams,id'],
+            'team_id' => ['nullable', 'integer', 'exists:teams,id'],
+            'task_priority_id' => ['nullable', 'integer', 'exists:task_priorities,id'],
+            'task_category_id' => ['nullable', 'integer', 'exists:task_categories,id'],
+            'due_at' => ['nullable', 'date'],
+            'estimated_minutes' => ['nullable', 'integer', 'min:1', 'max:10080'],
+        ];
+    }
+
+    private function formData(int $companyId): array
+    {
+        return [
+            'users' => User::query()
+                ->whereHas('companyMemberships', fn ($query) => $query
+                    ->where('company_id', $companyId)
+                    ->where('status', 'active'))
+                ->orderBy('name')
+                ->get(),
+            'teams' => Team::query()
+                ->where('company_id', $companyId)
+                ->where('is_active', true)
+                ->orderBy('name')
+                ->get(),
+            'statuses' => TaskStatus::query()
+                ->where(fn ($query) => $query->where('company_id', $companyId)->orWhereNull('company_id'))
+                ->where('is_active', true)
+                ->orderBy('sort_order')
+                ->get(),
+            'priorities' => TaskPriority::query()
+                ->where(fn ($query) => $query->where('company_id', $companyId)->orWhereNull('company_id'))
+                ->where('is_active', true)
+                ->orderBy('sort_order')
+                ->get(),
+            'categories' => TaskCategory::query()
+                ->where('company_id', $companyId)
+                ->where('is_active', true)
+                ->orderBy('name')
+                ->get(),
+        ];
+    }
+
+    private function ensureEditableCompanyTarget(int $companyId, ?int $assigneeUserId, ?int $assigneeTeamId): void
+    {
+        if ($assigneeUserId) {
+            abort_unless(User::query()
+                ->whereKey($assigneeUserId)
+                ->whereHas('companyMemberships', fn ($query) => $query
+                    ->where('company_id', $companyId)
+                    ->where('status', 'active'))
+                ->exists(), 422);
+        }
+
+        if ($assigneeTeamId) {
+            abort_unless(Team::query()
+                ->whereKey($assigneeTeamId)
+                ->where('company_id', $companyId)
+                ->where('is_active', true)
+                ->exists(), 422);
+        }
     }
 }

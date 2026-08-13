@@ -33,6 +33,11 @@ class TaskPolicy
                 || $task->creator?->is($user));
     }
 
+    public function delete(User $user, Task $task): bool
+    {
+        return $this->update($user, $task);
+    }
+
     public function complete(User $user, Task $task): bool
     {
         return $this->canAccessCompany($user, $task->company_id)

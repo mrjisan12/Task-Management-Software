@@ -446,6 +446,21 @@
             background: #e0e7ff;
         }
 
+        .button.danger {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .button.danger:hover {
+            background: #fecaca;
+        }
+
+        .button.compact-button {
+            min-height: 32px;
+            padding: 0 11px;
+            font-size: 13px;
+        }
+
         .button.full {
             width: 100%;
         }
@@ -728,6 +743,14 @@
             flex-wrap: wrap;
         }
 
+        .sent-card .task-card-main:hover .task-card-title {
+            color: #1d4ed8;
+        }
+
+        .sent-actions form {
+            margin: 0;
+        }
+
         .profile-hero {
             position: relative;
             overflow: hidden;
@@ -818,6 +841,18 @@
         .file-input {
             height: auto;
             padding: 9px 12px;
+        }
+
+        .readonly-field {
+            min-height: 42px;
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            border: 1px solid #e5eaf2;
+            border-radius: 6px;
+            background: #f8fafc;
+            color: #475569;
+            font-weight: 800;
         }
 
         .hint {
