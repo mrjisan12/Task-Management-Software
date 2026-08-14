@@ -17,6 +17,12 @@
             ->filter()
             ->values()
             ->join(', '),
+        'assigned_to_you_text' => ($task->creator?->name ?? 'Someone').' assigned this to you',
+        'sent_text' => 'You assigned this to '.($task->assignments
+            ->map(fn ($assignment) => $assignment->assignee?->name ?? $assignment->team?->name)
+            ->filter()
+            ->values()
+            ->join(', ') ?: 'No assignee'),
     ];
 @endphp
 
@@ -60,8 +66,14 @@
                         neutral: value === 'low'
                     };
                 },
+                isUrgent(task) {
+                    return task.due_at_ts && Number(task.due_at_ts) > this.now && Number(task.due_at_ts) - this.now < 3600000;
+                },
                 isDue(task) {
                     return task.due_at_ts && Number(task.due_at_ts) <= this.now;
+                },
+                twoDigits(value) {
+                    return String(value).padStart(2, '0');
                 },
                 countdown(task) {
                     if (! task.due_at_ts) {
@@ -79,6 +91,10 @@
                     const hours = Math.floor((totalSeconds % 86400) / 3600);
                     const minutes = Math.floor((totalSeconds % 3600) / 60);
                     const seconds = totalSeconds % 60;
+
+                    if (hours < 1 && days < 1) {
+                        return `${this.twoDigits(minutes)}:${this.twoDigits(seconds)}`;
+                    }
 
                     if (days > 0) {
                         return `${days}d ${hours}h left`;
@@ -120,7 +136,7 @@
                 <template x-for="task in pending" :key="task.id">
                     <a class="task-card" :href="task.url">
                         <div class="task-card-main">
-                            <span class="avatar sm">
+                            <span class="avatar task-avatar">
                                 <template x-if="task.creator_photo">
                                     <img :src="task.creator_photo" :alt="task.creator || 'Assigner'">
                                 </template>
@@ -131,7 +147,7 @@
                             <div>
                                 <strong class="task-card-title" x-text="task.title"></strong>
                                 <div class="task-card-meta">
-                                    <span x-text="(task.creator || 'Someone') + ' assigned this'"></span>
+                                    <span x-text="task.assigned_to_you_text || ((task.creator || 'Someone') + ' assigned this to you')"></span>
                                     <template x-if="task.due_at">
                                         <span x-text="'Due ' + task.due_at"></span>
                                     </template>
@@ -140,7 +156,7 @@
                         </div>
                         <div class="task-card-badges">
                             <template x-if="task.due_at_ts">
-                                <span class="timer-pill" x-bind:class="{ due: isDue(task) }" x-text="countdown(task)"></span>
+                                <span class="timer-pill" x-bind:class="{ due: isDue(task), urgent: isUrgent(task) }" x-text="countdown(task)"></span>
                             </template>
                             <span class="badge" x-bind:class="priorityClass(task.priority)" x-text="task.priority || 'Priority'"></span>
                             <span class="badge warning" x-text="task.status || 'Pending'"></span>
@@ -155,7 +171,7 @@
                 <template x-for="task in sent" :key="task.id">
                     <div class="task-card sent-card">
                         <a class="task-card-main" :href="task.url">
-                            <span class="avatar sm">
+                            <span class="avatar task-avatar">
                                 <template x-if="task.creator_photo">
                                     <img :src="task.creator_photo" :alt="task.creator || 'Assigner'">
                                 </template>
@@ -166,7 +182,7 @@
                             <div>
                                 <strong class="task-card-title" x-text="task.title"></strong>
                                 <div class="task-card-meta">
-                                    <span x-text="'Assigned to ' + (task.assignees || 'No assignee')"></span>
+                                    <span x-text="task.sent_text || ('You assigned this to ' + (task.assignees || 'No assignee'))"></span>
                                     <template x-if="task.due_at">
                                         <span x-text="'Due ' + task.due_at"></span>
                                     </template>
@@ -193,7 +209,7 @@
                 <template x-for="task in completed" :key="task.id">
                     <a class="task-card" :href="task.url">
                         <div class="task-card-main">
-                            <span class="avatar sm">
+                            <span class="avatar task-avatar">
                                 <template x-if="task.creator_photo">
                                     <img :src="task.creator_photo" :alt="task.creator || 'Assigner'">
                                 </template>
@@ -204,7 +220,7 @@
                             <div>
                                 <strong class="task-card-title" x-text="task.title"></strong>
                                 <div class="task-card-meta">
-                                    <span x-text="(task.creator || 'Someone') + ' assigned this'"></span>
+                                    <span x-text="task.assigned_to_you_text || ((task.creator || 'Someone') + ' assigned this to you')"></span>
                                     <template x-if="task.due_at">
                                         <span x-text="'Due ' + task.due_at"></span>
                                     </template>

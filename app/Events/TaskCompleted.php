@@ -15,7 +15,7 @@ class TaskCompleted implements ShouldBroadcastNow
 
     public function __construct(public Task $task)
     {
-        $this->task->loadMissing(['company', 'creator', 'completedBy', 'status', 'priority', 'assignments.assignee', 'assignments.team']);
+        $this->task->loadMissing(['company', 'creator.profile', 'completedBy', 'status', 'priority', 'assignments.assignee', 'assignments.team']);
     }
 
     public function broadcastOn(): array
@@ -53,11 +53,27 @@ class TaskCompleted implements ShouldBroadcastNow
                 'priority' => $this->task->priority?->name,
                 'company_id' => $this->task->company_id,
                 'creator' => $this->task->creator?->name,
+                'creator_photo' => $this->task->creator?->profile?->photoUrl(),
+                'creator_initial' => str($this->task->creator?->name ?? 'U')->substr(0, 1)->upper()->toString(),
                 'due_at' => $this->task->due_at?->format('M j, g:i A'),
                 'due_at_ts' => $this->task->due_at?->getTimestampMs(),
+                'assignees' => $this->assignees(),
+                'assigned_to_you_text' => ($this->task->creator?->name ?? 'Someone').' assigned this to you',
+                'sent_text' => 'You assigned this to '.($this->assignees() ?: 'No assignee'),
                 'completed_by' => $this->task->completedBy?->name,
                 'url' => route('tasks.show', $this->task),
+                'edit_url' => route('tasks.edit', $this->task),
+                'delete_url' => route('tasks.destroy', $this->task),
             ],
         ];
+    }
+
+    private function assignees(): string
+    {
+        return $this->task->assignments
+            ->map(fn ($assignment) => $assignment->assignee?->name ?? $assignment->team?->name)
+            ->filter()
+            ->values()
+            ->join(', ');
     }
 }

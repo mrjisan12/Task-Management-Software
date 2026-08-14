@@ -1,6 +1,7 @@
 @php
     $assigneeUserId = old('assignee_user_id', $task->assignments->firstWhere('assignee_user_id')?->assignee_user_id);
     $assigneeTeamId = old('assignee_team_id', $task->assignments->firstWhere('assignee_team_id')?->assignee_team_id);
+    $minDueAt = now()->format('Y-m-d\TH:i');
 @endphp
 
 <x-layouts.app>
@@ -91,7 +92,7 @@
 
                 <div class="field">
                     <label class="label" for="due_at">Due Date and Time</label>
-                    <input class="input @error('due_at') error-input @enderror" id="due_at" name="due_at" type="datetime-local" value="{{ old('due_at', $task->due_at?->format('Y-m-d\TH:i')) }}">
+                    <input class="input @error('due_at') error-input @enderror" id="due_at" name="due_at" type="datetime-local" min="{{ $minDueAt }}" value="{{ old('due_at', $task->due_at?->format('Y-m-d\TH:i')) }}">
                     @error('due_at') <div class="error">{{ $message }}</div> @enderror
                 </div>
 

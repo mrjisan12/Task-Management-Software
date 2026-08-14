@@ -72,7 +72,7 @@ class TaskController extends Controller
 
         return view('employee.tasks.create', [
             'company' => $company,
-            ...$this->formData($company->id),
+            ...$this->formData($company->id, $request->user()->id),
         ]);
     }
 
@@ -91,9 +91,11 @@ class TaskController extends Controller
             'task_status_id' => ['nullable', 'integer', 'exists:task_statuses,id'],
             'task_priority_id' => ['nullable', 'integer', 'exists:task_priorities,id'],
             'task_category_id' => ['nullable', 'integer', 'exists:task_categories,id'],
-            'due_at' => ['nullable', 'date'],
+            'due_at' => ['nullable', 'date', 'after:now'],
             'estimated_minutes' => ['nullable', 'integer', 'min:1', 'max:10080'],
         ]);
+
+        abort_if((int) ($validated['assignee_user_id'] ?? 0) === $request->user()->id, 422);
 
         $task = $taskService->createForUser($company, $request->user(), $validated);
 
@@ -109,7 +111,7 @@ class TaskController extends Controller
         return view('employee.tasks.edit', [
             'task' => $task->load(['assignments.assignee', 'assignments.team']),
             'company' => $task->company,
-            ...$this->formData($task->company_id),
+            ...$this->formData($task->company_id, $request->user()->id),
         ]);
     }
 
@@ -118,6 +120,8 @@ class TaskController extends Controller
         $this->authorize('update', $task);
 
         $validated = $request->validate($this->taskRules());
+
+        abort_if((int) ($validated['assignee_user_id'] ?? 0) === $request->user()->id, 422);
 
         $this->ensureEditableCompanyTarget($task->company_id, $validated['assignee_user_id'] ?? null, $validated['assignee_team_id'] ?? null);
 
@@ -201,18 +205,19 @@ class TaskController extends Controller
             'team_id' => ['nullable', 'integer', 'exists:teams,id'],
             'task_priority_id' => ['nullable', 'integer', 'exists:task_priorities,id'],
             'task_category_id' => ['nullable', 'integer', 'exists:task_categories,id'],
-            'due_at' => ['nullable', 'date'],
+            'due_at' => ['nullable', 'date', 'after:now'],
             'estimated_minutes' => ['nullable', 'integer', 'min:1', 'max:10080'],
         ];
     }
 
-    private function formData(int $companyId): array
+    private function formData(int $companyId, ?int $excludeUserId = null): array
     {
         return [
             'users' => User::query()
                 ->whereHas('companyMemberships', fn ($query) => $query
                     ->where('company_id', $companyId)
                     ->where('status', 'active'))
+                ->when($excludeUserId, fn ($query) => $query->whereKeyNot($excludeUserId))
                 ->orderBy('name')
                 ->get(),
             'teams' => Team::query()

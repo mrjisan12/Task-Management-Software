@@ -243,6 +243,13 @@
             font-size: 12px;
         }
 
+        .avatar.task-avatar {
+            width: 42px;
+            height: 42px;
+            font-size: 15px;
+            box-shadow: 0 8px 18px rgba(37, 99, 235, 0.12);
+        }
+
         .avatar.xl {
             width: 86px;
             height: 86px;
@@ -700,16 +707,19 @@
             display: grid;
             grid-template-columns: minmax(0, 1fr) auto;
             gap: 14px;
-            padding: 16px;
+            padding: 16px 18px;
             border: 1px solid var(--line);
             border-radius: 8px;
-            background: white;
-            box-shadow: 0 8px 18px rgba(24, 33, 47, 0.04);
+            background:
+                linear-gradient(180deg, #ffffff, #fbfdff);
+            box-shadow: 0 10px 24px rgba(24, 33, 47, 0.045);
+            transition: border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease;
         }
 
         .task-card:hover {
             border-color: #bfdbfe;
-            box-shadow: 0 12px 24px rgba(37, 99, 235, 0.08);
+            box-shadow: 0 16px 32px rgba(37, 99, 235, 0.10);
+            transform: translateY(-1px);
         }
 
         .task-card-title {
@@ -721,7 +731,7 @@
 
         .task-card-main {
             display: flex;
-            align-items: flex-start;
+            align-items: center;
             gap: 12px;
             min-width: 0;
         }
@@ -865,14 +875,17 @@
             display: inline-flex;
             align-items: center;
             gap: 7px;
-            min-height: 30px;
-            padding: 0 11px;
+            min-height: 32px;
+            min-width: 82px;
+            justify-content: center;
+            padding: 0 12px;
             border-radius: 999px;
             background: linear-gradient(135deg, #fff7ed, #fef3c7);
             color: #92400e;
             border: 1px solid #fed7aa;
             font-size: 12px;
             font-weight: 900;
+            font-variant-numeric: tabular-nums;
             box-shadow: 0 8px 16px rgba(245, 158, 11, 0.14);
         }
 
@@ -892,9 +905,22 @@
             box-shadow: 0 10px 20px rgba(220, 38, 38, 0.18);
         }
 
+        .timer-pill.urgent {
+            background: #111827;
+            color: white;
+            border-color: #111827;
+            letter-spacing: 0.02em;
+            box-shadow: 0 12px 24px rgba(17, 24, 39, 0.18);
+        }
+
         .timer-pill.due::before {
             background: white;
             box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.18);
+        }
+
+        .timer-pill.urgent::before {
+            background: #22c55e;
+            box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.18);
         }
 
         .mini-metrics {

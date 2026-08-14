@@ -1,3 +1,7 @@
+@php
+    $minDueAt = now()->format('Y-m-d\TH:i');
+@endphp
+
 <x-layouts.app>
     <div class="grid">
         <section class="panel span-8">
@@ -79,7 +83,8 @@
 
                 <div class="field">
                     <label class="label" for="due_at">Due Date and Time</label>
-                    <input class="input" id="due_at" name="due_at" type="datetime-local" value="{{ old('due_at') }}">
+                    <input class="input" id="due_at" name="due_at" type="datetime-local" min="{{ $minDueAt }}" value="{{ old('due_at') }}">
+                    @error('due_at') <div class="error">{{ $message }}</div> @enderror
                 </div>
 
                 <div class="field">
