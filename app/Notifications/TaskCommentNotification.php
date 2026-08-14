@@ -16,7 +16,7 @@ class TaskCommentNotification extends Notification implements ShouldQueue
     {
         $this->afterCommit();
         $this->onQueue('notifications');
-        $this->comment->loadMissing(['task', 'user']);
+        $this->comment->loadMissing(['task', 'user.profile']);
     }
 
     public function via(object $notifiable): array
@@ -35,6 +35,18 @@ class TaskCommentNotification extends Notification implements ShouldQueue
             'task_id' => $this->comment->task_id,
             'comment_id' => $this->comment->id,
             'actor_id' => $this->comment->user_id,
+            'comment' => [
+                'id' => $this->comment->id,
+                'task_id' => $this->comment->task_id,
+                'body' => $this->comment->body,
+                'user_id' => $this->comment->user_id,
+                'user_name' => $this->comment->user?->name,
+                'user_photo' => $this->comment->user?->profile?->photoUrl(),
+                'user_initial' => str($this->comment->user?->name ?? 'U')->substr(0, 1)->upper()->toString(),
+                'created_at' => $this->comment->created_at?->format('M j, g:i A'),
+                'created_at_human' => $this->comment->created_at?->diffForHumans(),
+                'task_url' => route('tasks.show', $this->comment->task),
+            ],
             'sound' => 'task_comment',
             'priority' => 'normal',
             'action_url' => route('tasks.show', $this->comment->task),

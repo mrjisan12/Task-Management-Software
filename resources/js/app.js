@@ -190,6 +190,12 @@ if (userId) {
     window.Echo.private(`user.${userId}`)
         .notification((notification) => {
             Alpine.store('notifications').push(notification);
+
+            const payload = notification?.data ?? notification;
+
+            if (payload?.event === 'task_comment' && payload?.comment?.id) {
+                dispatchTaskCommented({ comment: payload.comment });
+            }
         })
         .listen('.task.assigned', dispatchTaskAssigned)
         .listen('.task.completed', dispatchTaskCompleted)
