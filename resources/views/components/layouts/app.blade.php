@@ -761,6 +761,88 @@
             margin: 0;
         }
 
+        .activity-panel {
+            background: linear-gradient(180deg, #ffffff, #f8fafc);
+        }
+
+        .comment-feed {
+            max-height: 420px;
+            display: grid;
+            gap: 12px;
+            overflow-y: auto;
+            padding: 4px 4px 12px;
+            scroll-behavior: smooth;
+        }
+
+        .comment-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            max-width: min(720px, 100%);
+        }
+
+        .comment-row.mine {
+            justify-self: end;
+            flex-direction: row-reverse;
+        }
+
+        .comment-bubble {
+            min-width: 0;
+            padding: 11px 12px;
+            border: 1px solid #e5eaf2;
+            border-radius: 8px;
+            background: white;
+            box-shadow: 0 8px 18px rgba(24, 33, 47, 0.045);
+        }
+
+        .comment-row.mine .comment-bubble {
+            border-color: #bfdbfe;
+            background: #eff6ff;
+        }
+
+        .comment-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .comment-meta strong {
+            color: #0f172a;
+            font-size: 13px;
+        }
+
+        .comment-bubble p {
+            margin: 6px 0 0;
+            color: #1f2937;
+            line-height: 1.55;
+            white-space: pre-wrap;
+        }
+
+        .comment-form {
+            display: grid;
+            gap: 10px;
+            margin-top: 14px;
+            padding-top: 14px;
+            border-top: 1px solid var(--line);
+        }
+
+        .comment-form textarea {
+            height: auto;
+            min-height: 82px;
+            padding-top: 10px;
+            resize: vertical;
+        }
+
+        .comment-actions {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
         .profile-hero {
             position: relative;
             overflow: hidden;

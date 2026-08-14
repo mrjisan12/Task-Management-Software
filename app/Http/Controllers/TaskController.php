@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\TaskCommented;
 use App\Models\Task;
 use App\Models\TaskCategory;
 use App\Models\TaskPriority;
@@ -13,6 +14,7 @@ use App\Services\TaskService;
 use App\Support\CompanyContext;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class TaskController extends Controller
@@ -176,8 +178,48 @@ class TaskController extends Controller
         $this->authorize('view', $task);
 
         return view('employee.tasks.show', [
-            'task' => $task->load(['company', 'creator', 'status', 'priority', 'category', 'team', 'assignments.assignee', 'assignments.team', 'comments.user']),
+            'task' => $task->load([
+                'company',
+                'creator',
+                'status',
+                'priority',
+                'category',
+                'team',
+                'assignments.assignee',
+                'assignments.team',
+                'comments' => fn ($query) => $query->oldest(),
+                'comments.user.profile',
+            ]),
         ]);
+    }
+
+    public function comment(Request $request, Task $task): JsonResponse|RedirectResponse
+    {
+        $this->authorize('view', $task);
+
+        $validated = $request->validate([
+            'body' => ['required', 'string', 'max:2000'],
+        ]);
+
+        $comment = $task->comments()->create([
+            'user_id' => $request->user()->id,
+            'body' => $validated['body'],
+        ]);
+
+        $comment->load(['user.profile', 'task.creator', 'task.assignments.assignee', 'task.assignments.team.users']);
+
+        $event = new TaskCommented($comment);
+        TaskCommented::dispatch($comment);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'comment' => $event->payload(),
+            ]);
+        }
+
+        return redirect()
+            ->route('tasks.show', $task)
+            ->with('status', 'Comment added successfully.');
     }
 
     public function complete(Request $request, Task $task, TaskCompletionService $taskCompletionService): RedirectResponse

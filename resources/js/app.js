@@ -176,13 +176,24 @@ const dispatchTaskCompleted = (event) => {
     }));
 };
 
+const dispatchTaskCommented = (event) => {
+    if (! event?.comment?.id) {
+        return;
+    }
+
+    window.dispatchEvent(new CustomEvent('task-commented', {
+        detail: event.comment,
+    }));
+};
+
 if (userId) {
     window.Echo.private(`user.${userId}`)
         .notification((notification) => {
             Alpine.store('notifications').push(notification);
         })
         .listen('.task.assigned', dispatchTaskAssigned)
-        .listen('.task.completed', dispatchTaskCompleted);
+        .listen('.task.completed', dispatchTaskCompleted)
+        .listen('.task.commented', dispatchTaskCommented);
 }
 
 teamIds.forEach((teamId) => {

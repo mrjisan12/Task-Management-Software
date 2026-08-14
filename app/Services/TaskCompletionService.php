@@ -3,7 +3,9 @@
 namespace App\Services;
 
 use App\Events\TaskCompleted;
+use App\Events\TaskCommented;
 use App\Models\Task;
+use App\Models\TaskComment;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -32,7 +34,9 @@ class TaskCompletionService
             ]);
         }
 
-        $completedTask = DB::transaction(function () use ($task, $user, $comment): Task {
+        $completionComment = null;
+
+        $completedTask = DB::transaction(function () use ($task, $user, $comment, &$completionComment): Task {
             $completedStatus = $this->taskService->defaultStatus($task->company, 'completed');
 
             $task->update([
@@ -53,7 +57,7 @@ class TaskCompletionService
                 ]);
 
             if ($comment) {
-                $task->comments()->create([
+                $completionComment = $task->comments()->create([
                     'user_id' => $user->id,
                     'body' => $comment,
                 ]);
@@ -118,7 +122,13 @@ class TaskCompletionService
             return $task->refresh();
         });
 
-        DB::afterCommit(fn () => TaskCompleted::dispatch($completedTask));
+        DB::afterCommit(function () use ($completedTask, $completionComment): void {
+            TaskCompleted::dispatch($completedTask);
+
+            if ($completionComment instanceof TaskComment) {
+                TaskCommented::dispatch($completionComment);
+            }
+        });
 
         return $completedTask;
     }
