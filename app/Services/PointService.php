@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Events\PointAwarded;
 use App\Models\Company;
 use App\Models\PointRule;
 use App\Models\PointTransaction;
@@ -103,6 +104,10 @@ class PointService
             }
 
             $summary->forceFill(['last_recalculated_at' => now()])->save();
+
+            if ($points > 0) {
+                DB::afterCommit(fn () => PointAwarded::dispatch($transaction));
+            }
 
             return $transaction;
         });

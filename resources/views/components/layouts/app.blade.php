@@ -1405,6 +1405,157 @@
             background: rgba(255, 255, 255, 0.12);
         }
 
+        .reward-backdrop {
+            position: fixed;
+            inset: 0;
+            display: grid;
+            place-items: center;
+            padding: 18px;
+            background: rgba(15, 23, 42, 0.36);
+            backdrop-filter: blur(8px);
+            z-index: 80;
+        }
+
+        .reward-modal {
+            position: relative;
+            width: min(520px, 100%);
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.64);
+            border-radius: 8px;
+            background:
+                linear-gradient(135deg, #ffffff 0%, #eff6ff 48%, #ecfdf5 100%);
+            box-shadow: 0 28px 70px rgba(15, 23, 42, 0.28);
+        }
+
+        .reward-modal.collaborator {
+            background:
+                linear-gradient(135deg, #ffffff 0%, #f0fdf4 48%, #fff7ed 100%);
+        }
+
+        .reward-modal::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                linear-gradient(90deg, transparent 0 10%, rgba(37, 99, 235, 0.18) 10% 12%, transparent 12% 28%, rgba(15, 143, 95, 0.18) 28% 30%, transparent 30% 48%, rgba(245, 158, 11, 0.22) 48% 50%, transparent 50% 100%);
+            opacity: 0.62;
+            pointer-events: none;
+        }
+
+        .reward-close {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            width: 30px;
+            height: 30px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 0;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.72);
+            color: #475569;
+            cursor: pointer;
+            z-index: 2;
+        }
+
+        .reward-body {
+            position: relative;
+            z-index: 1;
+            padding: 30px;
+        }
+
+        .reward-kicker {
+            margin: 0 0 12px;
+            color: #1d4ed8;
+            font-size: 12px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0;
+        }
+
+        .reward-title {
+            margin: 0;
+            color: #0f172a;
+            font-size: 28px;
+            line-height: 1.15;
+        }
+
+        .reward-message {
+            margin: 12px 0 0;
+            color: #475569;
+            line-height: 1.6;
+        }
+
+        .reward-points {
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+            margin: 20px 0;
+            color: #0f172a;
+        }
+
+        .reward-points strong {
+            font-size: 50px;
+            line-height: 1;
+        }
+
+        .reward-points span {
+            color: #1d4ed8;
+            font-weight: 900;
+        }
+
+        .reward-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        .reward-stat {
+            padding: 12px;
+            border: 1px solid rgba(191, 219, 254, 0.88);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.72);
+        }
+
+        .reward-stat span {
+            display: block;
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .reward-stat strong {
+            display: block;
+            margin-top: 4px;
+            color: #0f172a;
+            font-size: 14px;
+        }
+
+        .reward-progress {
+            height: 8px;
+            margin-top: 16px;
+            border-radius: 999px;
+            background: rgba(15, 23, 42, 0.10);
+            overflow: hidden;
+        }
+
+        .reward-progress span {
+            display: block;
+            height: 100%;
+            border-radius: inherit;
+            background: linear-gradient(90deg, #2563eb, #0f8f5f, #f59e0b);
+        }
+
+        .reward-actions {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-top: 22px;
+        }
+
         @media (max-width: 760px) {
             .span-4, .span-8, .dashboard-hero, .join-card { grid-column: span 12; }
             .topbar-inner {
@@ -1496,6 +1647,13 @@
             .dashboard-hero { min-height: 220px; }
             .mini-metrics { grid-template-columns: 1fr; }
             .goal-grid { grid-template-columns: 1fr; }
+            .reward-body { padding: 24px; }
+            .reward-grid { grid-template-columns: 1fr; }
+            .reward-actions {
+                align-items: stretch;
+                flex-direction: column;
+            }
+            .reward-actions .button { width: 100%; }
         }
     </style>
 </head>
@@ -1584,6 +1742,53 @@
                 <p x-text="item.body"></p>
             </a>
         </template>
+    </div>
+
+    <div class="reward-backdrop" x-data x-show="$store.rewards.current" x-cloak>
+        <div
+            class="reward-modal"
+            x-bind:class="{ collaborator: $store.rewards.current?.audience === 'collaborator' }"
+            x-on:click.outside="$store.rewards.dismiss()"
+        >
+            <button class="reward-close" type="button" aria-label="Close reward popup" x-on:click="$store.rewards.dismiss()">
+                <span aria-hidden="true">&times;</span>
+            </button>
+
+            <div class="reward-body">
+                <p class="reward-kicker" x-text="$store.rewards.current?.title"></p>
+                <h2 class="reward-title" x-text="$store.rewards.current?.headline"></h2>
+                <p class="reward-message" x-text="$store.rewards.current?.message"></p>
+
+                <div class="reward-points">
+                    <strong x-text="'+' + ($store.rewards.current?.points || 0)"></strong>
+                    <span>points</span>
+                </div>
+
+                <div class="reward-grid">
+                    <div class="reward-stat">
+                        <span>XP Added</span>
+                        <strong x-text="'+' + ($store.rewards.current?.xp_added || 0) + ' XP'"></strong>
+                    </div>
+                    <div class="reward-stat">
+                        <span>Current Level</span>
+                        <strong x-text="$store.rewards.current?.current_level"></strong>
+                    </div>
+                    <div class="reward-stat">
+                        <span>Next Level</span>
+                        <strong x-text="$store.rewards.current?.next_level"></strong>
+                    </div>
+                </div>
+
+                <div class="reward-progress" aria-hidden="true">
+                    <span x-bind:style="'width: ' + ($store.rewards.current?.progress || 0) + '%'"></span>
+                </div>
+
+                <div class="reward-actions">
+                    <span class="muted" x-text="($store.rewards.current?.xp_to_next || 0) > 0 ? ($store.rewards.current.xp_to_next + ' XP to the next level. Keep working.') : 'You are at the top level. Keep leading the rhythm.'"></span>
+                    <button class="button" type="button" x-on:click="$store.rewards.confirm()">Okay</button>
+                </div>
+            </div>
+        </div>
     </div>
 @endauth
 </body>

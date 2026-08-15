@@ -109,8 +109,113 @@ Alpine.store('notifications', {
     },
 });
 
+Alpine.store('rewards', {
+    queue: [],
+    current: null,
+    seen: {},
+    timer: null,
+    storageKey: 'task-management.reward-popups',
+
+    init() {
+        const saved = this.readSaved();
+
+        this.current = saved.current;
+        this.queue = saved.queue;
+        this.seen = saved.seen;
+
+        if (this.current) {
+            this.startTimer();
+        }
+
+        window.addEventListener('beforeunload', () => this.persist());
+    },
+
+    push(reward) {
+        if (! reward?.id || this.seen[reward.id]) {
+            return;
+        }
+
+        this.seen[reward.id] = true;
+        this.queue.push(reward);
+
+        if (! this.current) {
+            this.next();
+        } else {
+            this.persist();
+        }
+
+        Alpine.store('notifications').play('level_up');
+    },
+
+    next() {
+        clearTimeout(this.timer);
+        this.current = this.queue.shift() ?? null;
+
+        if (this.current) {
+            this.startTimer();
+        }
+
+        this.persist();
+    },
+
+    dismiss() {
+        clearTimeout(this.timer);
+        this.timer = null;
+        this.next();
+    },
+
+    confirm() {
+        const url = this.current?.action_url || '/tasks';
+        this.dismiss();
+        window.location.href = url;
+    },
+
+    startTimer() {
+        clearTimeout(this.timer);
+        this.timer = setTimeout(() => {
+            this.dismiss();
+        }, 10000);
+    },
+
+    persist() {
+        if (! this.current && this.queue.length === 0) {
+            sessionStorage.removeItem(this.storageKey);
+            return;
+        }
+
+        sessionStorage.setItem(this.storageKey, JSON.stringify({
+            current: this.current,
+            queue: this.queue,
+            seen: this.seen,
+        }));
+    },
+
+    readSaved() {
+        try {
+            const saved = JSON.parse(sessionStorage.getItem(this.storageKey) || '{}');
+
+            sessionStorage.removeItem(this.storageKey);
+
+            return {
+                current: saved.current ?? null,
+                queue: Array.isArray(saved.queue) ? saved.queue : [],
+                seen: saved.seen ?? {},
+            };
+        } catch (error) {
+            sessionStorage.removeItem(this.storageKey);
+
+            return {
+                current: null,
+                queue: [],
+                seen: {},
+            };
+        }
+    },
+});
+
 document.addEventListener('alpine:init', () => {
     Alpine.store('notifications').init();
+    Alpine.store('rewards').init();
 });
 
 const showButtonLoading = (button) => {
@@ -186,6 +291,14 @@ const dispatchTaskCommented = (event) => {
     }));
 };
 
+const dispatchPointAwarded = (event) => {
+    if (! event?.reward?.id) {
+        return;
+    }
+
+    Alpine.store('rewards').push(event.reward);
+};
+
 if (userId) {
     window.Echo.private(`user.${userId}`)
         .notification((notification) => {
@@ -199,7 +312,8 @@ if (userId) {
         })
         .listen('.task.assigned', dispatchTaskAssigned)
         .listen('.task.completed', dispatchTaskCompleted)
-        .listen('.task.commented', dispatchTaskCommented);
+        .listen('.task.commented', dispatchTaskCommented)
+        .listen('.points.awarded', dispatchPointAwarded);
 }
 
 teamIds.forEach((teamId) => {
