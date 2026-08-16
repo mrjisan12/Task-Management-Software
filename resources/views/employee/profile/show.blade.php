@@ -14,6 +14,7 @@
                     <p class="subtitle">{{ $profile->designation ?: 'No designation added' }}</p>
                     <div class="profile-tags">
                         <span class="badge">{{ $user->email }}</span>
+                        <span class="badge warning">{{ $roleDisplay }}</span>
                         <span class="badge success">{{ $company?->name ?? 'No active company' }}</span>
                     </div>
                 </div>
@@ -46,6 +47,10 @@
                 <div class="row">
                     <span class="muted">Company</span>
                     <strong>{{ $company?->name ?? 'Not joined' }}</strong>
+                </div>
+                <div class="row">
+                    <span class="muted">User Type</span>
+                    <strong>{{ $roleDisplay }}</strong>
                 </div>
                 <div class="row">
                     <span class="muted">Phone</span>

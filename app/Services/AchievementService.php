@@ -14,10 +14,7 @@ class AchievementService
     {
         $earned = [];
 
-        $achievements = Achievement::query()
-            ->where(function ($query) use ($company): void {
-                $query->where('company_id', $company->id)->orWhereNull('company_id');
-            })
+        $achievements = $this->achievementsFor($company)
             ->where('is_active', true)
             ->get();
 
@@ -65,5 +62,16 @@ class AchievementService
                 ->count() >= (int) ($requirements['threshold'] ?? 3),
             default => false,
         };
+    }
+
+    private function achievementsFor(Company $company)
+    {
+        $hasCompanyAchievements = Achievement::query()
+            ->where('company_id', $company->id)
+            ->where('is_active', true)
+            ->exists();
+
+        return Achievement::query()
+            ->where('company_id', $hasCompanyAchievements ? $company->id : null);
     }
 }

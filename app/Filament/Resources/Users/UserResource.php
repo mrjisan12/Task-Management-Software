@@ -10,6 +10,7 @@ use App\Filament\Resources\Users\Schemas\UserForm;
 use App\Filament\Resources\Users\Schemas\UserInfolist;
 use App\Filament\Resources\Users\Tables\UsersTable;
 use App\Models\User;
+use App\Support\AdminCompanyScope;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -41,6 +42,11 @@ class UserResource extends Resource
         return UsersTable::configure($table);
     }
 
+    public static function getEloquentQuery(): Builder
+    {
+        return AdminCompanyScope::userQuery(parent::getEloquentQuery());
+    }
+
     public static function getRelations(): array
     {
         return [
@@ -60,7 +66,7 @@ class UserResource extends Resource
 
     public static function getRecordRouteBindingEloquentQuery(): Builder
     {
-        return parent::getRecordRouteBindingEloquentQuery()
+        return AdminCompanyScope::userQuery(parent::getRecordRouteBindingEloquentQuery())
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ]);

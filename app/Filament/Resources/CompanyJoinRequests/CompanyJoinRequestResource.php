@@ -10,11 +10,13 @@ use App\Filament\Resources\CompanyJoinRequests\Schemas\CompanyJoinRequestForm;
 use App\Filament\Resources\CompanyJoinRequests\Schemas\CompanyJoinRequestInfolist;
 use App\Filament\Resources\CompanyJoinRequests\Tables\CompanyJoinRequestsTable;
 use App\Models\CompanyJoinRequest;
+use App\Support\AdminCompanyScope;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class CompanyJoinRequestResource extends Resource
 {
@@ -39,6 +41,16 @@ class CompanyJoinRequestResource extends Resource
     public static function table(Table $table): Table
     {
         return CompanyJoinRequestsTable::configure($table);
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return AdminCompanyScope::companyQuery(parent::getEloquentQuery());
+    }
+
+    public static function getRecordRouteBindingEloquentQuery(): Builder
+    {
+        return AdminCompanyScope::companyQuery(parent::getRecordRouteBindingEloquentQuery());
     }
 
     public static function getRelations(): array

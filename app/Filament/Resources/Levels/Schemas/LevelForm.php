@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Levels\Schemas;
 
+use App\Support\AdminCompanyScope;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
@@ -14,7 +15,7 @@ class LevelForm
     {
         return $schema
             ->components([
-                Select::make('company_id')->relationship('company', 'name')->searchable()->preload(),
+                AdminCompanyScope::companySelect(Select::make('company_id'), false),
                 TextInput::make('name')->required()->maxLength(255),
                 TextInput::make('required_xp')->numeric()->required()->minValue(0),
                 TextInput::make('icon')->maxLength(255),

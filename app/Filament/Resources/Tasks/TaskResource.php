@@ -10,6 +10,7 @@ use App\Filament\Resources\Tasks\Schemas\TaskForm;
 use App\Filament\Resources\Tasks\Schemas\TaskInfolist;
 use App\Filament\Resources\Tasks\Tables\TasksTable;
 use App\Models\Task;
+use App\Support\AdminCompanyScope;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -41,6 +42,11 @@ class TaskResource extends Resource
         return TasksTable::configure($table);
     }
 
+    public static function getEloquentQuery(): Builder
+    {
+        return AdminCompanyScope::companyQuery(parent::getEloquentQuery());
+    }
+
     public static function getRelations(): array
     {
         return [
@@ -60,7 +66,7 @@ class TaskResource extends Resource
 
     public static function getRecordRouteBindingEloquentQuery(): Builder
     {
-        return parent::getRecordRouteBindingEloquentQuery()
+        return AdminCompanyScope::companyQuery(parent::getRecordRouteBindingEloquentQuery())
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ]);

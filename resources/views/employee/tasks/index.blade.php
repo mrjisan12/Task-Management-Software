@@ -53,6 +53,7 @@
 
                     const existing = this.pending.find((item) => item.id === task.id) || this.completed.find((item) => item.id === task.id) || task;
                     this.pending = this.pending.filter((item) => item.id !== task.id);
+                    this.sent = this.sent.filter((item) => item.id !== task.id);
 
                     if (! this.completed.some((item) => item.id === task.id)) {
                         this.completed.unshift({ ...existing, ...task, status: 'Completed' });

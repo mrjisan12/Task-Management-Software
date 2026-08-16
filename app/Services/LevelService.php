@@ -9,10 +9,7 @@ class LevelService
 {
     public function currentLevel(Company $company, int $xp): ?Level
     {
-        return Level::query()
-            ->where(function ($query) use ($company): void {
-                $query->where('company_id', $company->id)->orWhereNull('company_id');
-            })
+        return $this->levelsFor($company)
             ->where('is_active', true)
             ->where('required_xp', '<=', $xp)
             ->orderByDesc('required_xp')
@@ -21,13 +18,21 @@ class LevelService
 
     public function nextLevel(Company $company, int $xp): ?Level
     {
-        return Level::query()
-            ->where(function ($query) use ($company): void {
-                $query->where('company_id', $company->id)->orWhereNull('company_id');
-            })
+        return $this->levelsFor($company)
             ->where('is_active', true)
             ->where('required_xp', '>', $xp)
             ->orderBy('required_xp')
             ->first();
+    }
+
+    private function levelsFor(Company $company)
+    {
+        $hasCompanyLevels = Level::query()
+            ->where('company_id', $company->id)
+            ->where('is_active', true)
+            ->exists();
+
+        return Level::query()
+            ->where('company_id', $hasCompanyLevels ? $company->id : null);
     }
 }

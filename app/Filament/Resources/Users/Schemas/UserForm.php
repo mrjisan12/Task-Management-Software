@@ -2,12 +2,14 @@
 
 namespace App\Filament\Resources\Users\Schemas;
 
+use App\Support\AdminCompanyScope;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Role;
 
 class UserForm
 {
@@ -42,6 +44,13 @@ class UserForm
                     ->required(),
                 Select::make('roles')
                     ->relationship('roles', 'name')
+                    ->options(fn (): array => Role::query()
+                        ->when(! AdminCompanyScope::isPlatformAdmin(), fn ($query) => $query
+                            ->whereNotIn('name', ['super_admin', 'platform_admin']))
+                        ->orderBy('name')
+                        ->pluck('name', 'id')
+                        ->map(fn (string $role): string => str($role)->replace('_', ' ')->headline()->toString())
+                        ->all())
                     ->multiple()
                     ->preload()
                     ->searchable(),

@@ -19,9 +19,10 @@ class ProfileController extends Controller
         $this->syncCompanyName($profile, $company);
 
         return view('employee.profile.show', [
-            'user' => $request->user()->load('profile'),
+            'user' => $request->user()->load(['profile', 'roles']),
             'profile' => $profile,
             'company' => $company,
+            'roleDisplay' => $this->roleDisplay($request->user()),
         ]);
     }
 
@@ -32,7 +33,7 @@ class ProfileController extends Controller
         $this->syncCompanyName($profile, $company);
 
         return view('employee.profile.edit', [
-            'user' => $request->user()->load('profile'),
+            'user' => $request->user()->load(['profile', 'roles']),
             'profile' => $profile,
             'company' => $company,
         ]);
@@ -85,5 +86,20 @@ class ProfileController extends Controller
         if ($company && $profile->company_name !== $company->name) {
             $profile->forceFill(['company_name' => $company->name])->save();
         }
+    }
+
+    private function roleDisplay($user): string
+    {
+        $roles = $user->roles
+            ->pluck('name')
+            ->map(fn (string $role) => str($role)->replace('_', ' ')->headline()->toString())
+            ->values();
+
+        return match ($roles->count()) {
+            0 => 'No role assigned',
+            1 => $roles->first(),
+            2 => $roles->join(' and '),
+            default => $roles->slice(0, -1)->join(', ').' and '.$roles->last(),
+        };
     }
 }

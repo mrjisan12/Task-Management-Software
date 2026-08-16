@@ -8,11 +8,13 @@ use App\Filament\Resources\TaskStatuses\Pages\ListTaskStatuses;
 use App\Filament\Resources\TaskStatuses\Schemas\TaskStatusForm;
 use App\Filament\Resources\TaskStatuses\Tables\TaskStatusesTable;
 use App\Models\TaskStatus;
+use App\Support\AdminCompanyScope;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class TaskStatusResource extends Resource
 {
@@ -28,6 +30,16 @@ class TaskStatusResource extends Resource
     public static function table(Table $table): Table
     {
         return TaskStatusesTable::configure($table);
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return AdminCompanyScope::companyOrGlobalQuery(parent::getEloquentQuery());
+    }
+
+    public static function getRecordRouteBindingEloquentQuery(): Builder
+    {
+        return AdminCompanyScope::companyOrGlobalQuery(parent::getRecordRouteBindingEloquentQuery());
     }
 
     public static function getRelations(): array

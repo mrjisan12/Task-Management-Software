@@ -10,11 +10,13 @@ use App\Filament\Resources\Streaks\Schemas\StreakForm;
 use App\Filament\Resources\Streaks\Schemas\StreakInfolist;
 use App\Filament\Resources\Streaks\Tables\StreaksTable;
 use App\Models\Streak;
+use App\Support\AdminCompanyScope;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class StreakResource extends Resource
 {
@@ -35,6 +37,36 @@ class StreakResource extends Resource
     public static function table(Table $table): Table
     {
         return StreaksTable::configure($table);
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return AdminCompanyScope::isPlatformAdmin();
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return AdminCompanyScope::companyQuery(parent::getEloquentQuery());
+    }
+
+    public static function canCreate(): bool
+    {
+        return AdminCompanyScope::isPlatformAdmin();
+    }
+
+    public static function canEdit($record): bool
+    {
+        return AdminCompanyScope::isPlatformAdmin();
+    }
+
+    public static function canDelete($record): bool
+    {
+        return AdminCompanyScope::isPlatformAdmin();
+    }
+
+    public static function getRecordRouteBindingEloquentQuery(): Builder
+    {
+        return AdminCompanyScope::companyQuery(parent::getRecordRouteBindingEloquentQuery());
     }
 
     public static function getRelations(): array

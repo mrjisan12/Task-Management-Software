@@ -118,13 +118,29 @@ Alpine.store('rewards', {
 
     init() {
         const saved = this.readSaved();
+        const initialRewards = Array.isArray(window.__initialRewardPopups)
+            ? window.__initialRewardPopups
+            : [];
 
         this.current = saved.current;
         this.queue = saved.queue;
         this.seen = saved.seen;
 
+        initialRewards.forEach((reward) => {
+            if (! reward?.id || this.seen[reward.id]) {
+                return;
+            }
+
+            this.seen[reward.id] = true;
+            this.queue.push(reward);
+        });
+
         if (this.current) {
             this.startTimer();
+        } else if (this.queue.length > 0) {
+            this.next();
+        } else {
+            this.persist();
         }
 
         window.addEventListener('beforeunload', () => this.persist());

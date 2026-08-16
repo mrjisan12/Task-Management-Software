@@ -62,6 +62,13 @@ class Task extends Model
         });
     }
 
+    public function scopeIncomplete(Builder $query): Builder
+    {
+        return $query
+            ->whereNull('completed_at')
+            ->whereDoesntHave('status', fn (Builder $statusQuery) => $statusQuery->where('slug', 'completed'));
+    }
+
     public function company(): BelongsTo
     {
         return $this->belongsTo(Company::class);

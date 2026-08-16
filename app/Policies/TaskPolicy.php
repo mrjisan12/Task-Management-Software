@@ -35,7 +35,8 @@ class TaskPolicy
 
     public function delete(User $user, Task $task): bool
     {
-        return $this->update($user, $task);
+        return ! $task->isCompleted()
+            && $this->update($user, $task);
     }
 
     public function complete(User $user, Task $task): bool

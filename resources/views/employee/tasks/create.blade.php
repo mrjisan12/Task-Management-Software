@@ -4,11 +4,11 @@
 
 <x-layouts.app>
     <div class="grid">
-        <section class="panel span-8">
+        <section class="panel span-8 centered-panel">
             <h1 class="title">Create Task</h1>
             <p class="subtitle">{{ $company->name }}</p>
 
-            <form method="POST" action="{{ route('tasks.store') }}">
+            <form method="POST" action="{{ route('tasks.store') }}" enctype="multipart/form-data">
                 @csrf
 
                 <div class="field">
@@ -85,6 +85,14 @@
                     <label class="label" for="due_at">Due Date and Time</label>
                     <input class="input" id="due_at" name="due_at" type="datetime-local" min="{{ $minDueAt }}" value="{{ old('due_at') }}">
                     @error('due_at') <div class="error">{{ $message }}</div> @enderror
+                </div>
+
+                <div class="field">
+                    <label class="label" for="attachments">Attachments</label>
+                    <input class="input file-input" id="attachments" name="attachments[]" type="file" multiple>
+                    <p class="subtitle">Upload images or files, up to 12 files and 10 MB each.</p>
+                    @error('attachments') <div class="error">{{ $message }}</div> @enderror
+                    @error('attachments.*') <div class="error">{{ $message }}</div> @enderror
                 </div>
 
                 <div class="field">

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\TaskCategories\Schemas;
 
+use App\Support\AdminCompanyScope;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -13,7 +14,7 @@ class TaskCategoryForm
     {
         return $schema
             ->components([
-                Select::make('company_id')->relationship('company', 'name')->searchable()->preload()->required(),
+                AdminCompanyScope::companySelect(Select::make('company_id')),
                 TextInput::make('name')->required()->maxLength(255),
                 TextInput::make('slug')->required()->maxLength(255),
                 TextInput::make('color')->default('gray')->maxLength(255),

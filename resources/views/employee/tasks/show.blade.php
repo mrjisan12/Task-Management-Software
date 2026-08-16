@@ -10,6 +10,33 @@
         'created_at' => $comment->created_at?->format('M j, g:i A'),
         'created_at_human' => $comment->created_at?->diffForHumans(),
     ];
+
+    $formatSize = function ($bytes) {
+        if ($bytes >= 1048576) {
+            return number_format($bytes / 1048576, 1).' MB';
+        }
+
+        if ($bytes >= 1024) {
+            return number_format($bytes / 1024, 1).' KB';
+        }
+
+        return $bytes.' B';
+    };
+
+    $images = $task->attachments
+        ->filter(fn ($attachment) => str_starts_with((string) $attachment->mime_type, 'image/'))
+        ->values();
+
+    $files = $task->attachments
+        ->reject(fn ($attachment) => str_starts_with((string) $attachment->mime_type, 'image/'))
+        ->values();
+
+    $imagePayload = $images->map(fn ($attachment) => [
+        'id' => $attachment->id,
+        'name' => $attachment->original_name,
+        'url' => route('task-attachments.view', $attachment),
+        'download_url' => route('task-attachments.download', $attachment),
+    ])->values();
 @endphp
 
 <x-layouts.app>
@@ -71,6 +98,102 @@
                 </form>
             @endcan
         </section>
+
+        @if ($task->attachments->isNotEmpty())
+            <section
+                class="panel span-12 attachment-panel"
+                x-data="{
+                    images: @js($imagePayload),
+                    index: -1,
+                    zoom: 1,
+                    get current() {
+                        return this.index >= 0 ? (this.images[this.index] || null) : null;
+                    },
+                    openImage(position) {
+                        this.index = position;
+                        this.zoom = 1;
+                    },
+                    close() {
+                        this.index = -1;
+                        this.zoom = 1;
+                    },
+                    next() {
+                        if (this.images.length < 1) return;
+                        this.index = (this.index + 1) % this.images.length;
+                        this.zoom = 1;
+                    },
+                    prev() {
+                        if (this.images.length < 1) return;
+                        this.index = (this.index - 1 + this.images.length) % this.images.length;
+                        this.zoom = 1;
+                    },
+                    zoomIn() {
+                        this.zoom = Math.min(3, Number((this.zoom + 0.25).toFixed(2)));
+                    },
+                    zoomOut() {
+                        this.zoom = Math.max(1, Number((this.zoom - 0.25).toFixed(2)));
+                    },
+                }"
+                x-on:keydown.escape.window="close()"
+                x-on:keydown.arrow-right.window="if (current) next()"
+                x-on:keydown.arrow-left.window="if (current) prev()"
+            >
+                <div class="section-head">
+                    <div>
+                        <h2 class="section-title">Attachments</h2>
+                        <p class="subtitle">{{ $task->attachments->count() }} file{{ $task->attachments->count() === 1 ? '' : 's' }}</p>
+                    </div>
+                </div>
+
+                @if ($images->isNotEmpty())
+                    <div class="attachment-gallery">
+                        @foreach ($images as $image)
+                            <button class="attachment-thumb" type="button" x-on:click="openImage({{ $loop->index }})">
+                                <img src="{{ route('task-attachments.view', $image) }}" alt="{{ $image->original_name }}">
+                                <span>{{ $loop->iteration }}</span>
+                            </button>
+                        @endforeach
+                    </div>
+                @endif
+
+                @if ($files->isNotEmpty())
+                    <div class="attachment-files">
+                        @foreach ($files as $file)
+                            <a class="attachment-file" href="{{ route('task-attachments.download', $file) }}">
+                                <span class="attachment-file-icon">{{ strtoupper(pathinfo($file->original_name, PATHINFO_EXTENSION) ?: 'FILE') }}</span>
+                                <span>
+                                    <strong>{{ $file->original_name }}</strong>
+                                    <small>{{ $file->mime_type ?: 'File' }} &middot; {{ $formatSize($file->size) }}</small>
+                                </span>
+                                <em>Download</em>
+                            </a>
+                        @endforeach
+                    </div>
+                @endif
+
+                <template x-if="current">
+                    <div class="image-lightbox" x-on:click.self="close()" x-cloak>
+                        <div class="image-lightbox-toolbar">
+                            <button type="button" x-on:click="prev()" x-bind:disabled="images.length < 2">Prev</button>
+                            <button type="button" x-on:click="zoomOut()" x-bind:disabled="zoom <= 1">-</button>
+                            <span x-text="Math.round(zoom * 100) + '%'"></span>
+                            <button type="button" x-on:click="zoomIn()" x-bind:disabled="zoom >= 3">+</button>
+                            <button type="button" x-on:click="next()" x-bind:disabled="images.length < 2">Next</button>
+                            <a x-bind:href="current.download_url">Download</a>
+                            <button type="button" x-on:click="close()">Close</button>
+                        </div>
+
+                        <div class="image-lightbox-stage">
+                            <img
+                                x-bind:src="current.url"
+                                x-bind:alt="current.name"
+                                x-bind:style="'transform: scale(' + zoom + ')'"
+                            >
+                        </div>
+                    </div>
+                </template>
+            </section>
+        @endif
 
         <section
             class="panel span-12 activity-panel"

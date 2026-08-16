@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\PointAwarded;
 use App\Events\TaskCommented;
+use App\Models\PointTransaction;
 use App\Models\Task;
+use App\Models\TaskAttachment;
 use App\Models\TaskCategory;
 use App\Models\TaskPriority;
 use App\Models\TaskStatus;
@@ -13,9 +16,12 @@ use App\Services\TaskCompletionService;
 use App\Services\TaskService;
 use App\Support\CompanyContext;
 use Illuminate\Contracts\View\View;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class TaskController extends Controller
 {
@@ -35,7 +41,7 @@ class TaskController extends Controller
             ->assignedToUser($request->user());
 
         $pendingTasks = (clone $assignedTasks)
-            ->whereDoesntHave('status', fn ($query) => $query->where('slug', 'completed'))
+            ->incomplete()
             ->latest()
             ->limit(50)
             ->get();
@@ -50,6 +56,7 @@ class TaskController extends Controller
             ->with(['creator.profile', 'status', 'priority', 'team', 'assignments.assignee', 'assignments.team'])
             ->forCompany($company->id)
             ->where('created_by', $request->user()->id)
+            ->incomplete()
             ->latest()
             ->limit(50)
             ->get();
@@ -95,11 +102,14 @@ class TaskController extends Controller
             'task_category_id' => ['nullable', 'integer', 'exists:task_categories,id'],
             'due_at' => ['nullable', 'date', 'after:now'],
             'estimated_minutes' => ['nullable', 'integer', 'min:1', 'max:10080'],
+            'attachments' => ['nullable', 'array', 'max:12'],
+            'attachments.*' => ['file', 'max:10240'],
         ]);
 
         abort_if((int) ($validated['assignee_user_id'] ?? 0) === $request->user()->id, 422);
 
         $task = $taskService->createForUser($company, $request->user(), $validated);
+        $this->storeAttachments($task, $request);
 
         return redirect()
             ->route('tasks.show', $task)
@@ -157,6 +167,8 @@ class TaskController extends Controller
             ]);
         }
 
+        $this->storeAttachments($task, $request);
+
         return redirect()
             ->route('tasks.index')
             ->with('status', 'Task updated successfully.');
@@ -187,10 +199,31 @@ class TaskController extends Controller
                 'team',
                 'assignments.assignee',
                 'assignments.team',
+                'attachments' => fn ($query) => $query->oldest(),
                 'comments' => fn ($query) => $query->oldest(),
                 'comments.user.profile',
             ]),
         ]);
+    }
+
+    public function viewAttachment(TaskAttachment $attachment): BinaryFileResponse
+    {
+        $this->authorize('view', $attachment->task);
+
+        abort_unless(str_starts_with((string) $attachment->mime_type, 'image/'), 404);
+
+        return response()->file($this->attachmentPath($attachment), [
+            'Content-Type' => $attachment->mime_type,
+        ]);
+    }
+
+    public function downloadAttachment(TaskAttachment $attachment): StreamedResponse
+    {
+        $this->authorize('view', $attachment->task);
+
+        abort_unless(Storage::disk($attachment->disk)->exists($attachment->path), 404);
+
+        return Storage::disk($attachment->disk)->download($attachment->path, $attachment->original_name);
     }
 
     public function comment(Request $request, Task $task): JsonResponse|RedirectResponse
@@ -232,8 +265,13 @@ class TaskController extends Controller
 
         $taskCompletionService->complete($task, $request->user(), $validated['completion_comment'] ?? null);
 
+        $reward = PointTransaction::query()
+            ->where('idempotency_key', "task:{$task->id}:completed:user:{$request->user()->id}")
+            ->first();
+
         return redirect()
             ->route('tasks.show', $task)
+            ->with('reward_popups', $reward ? [(new PointAwarded($reward))->payload()] : [])
             ->with('status', 'Task completed successfully.');
     }
 
@@ -249,7 +287,33 @@ class TaskController extends Controller
             'task_category_id' => ['nullable', 'integer', 'exists:task_categories,id'],
             'due_at' => ['nullable', 'date', 'after:now'],
             'estimated_minutes' => ['nullable', 'integer', 'min:1', 'max:10080'],
+            'attachments' => ['nullable', 'array', 'max:12'],
+            'attachments.*' => ['file', 'max:10240'],
         ];
+    }
+
+    private function storeAttachments(Task $task, Request $request): void
+    {
+        foreach ($request->file('attachments', []) as $file) {
+            $disk = 'local';
+            $path = $file->store("task-attachments/{$task->id}", $disk);
+
+            $task->attachments()->create([
+                'uploaded_by' => $request->user()->id,
+                'disk' => $disk,
+                'path' => $path,
+                'original_name' => $file->getClientOriginalName(),
+                'mime_type' => $file->getMimeType(),
+                'size' => $file->getSize(),
+            ]);
+        }
+    }
+
+    private function attachmentPath(TaskAttachment $attachment): string
+    {
+        abort_unless(Storage::disk($attachment->disk)->exists($attachment->path), 404);
+
+        return Storage::disk($attachment->disk)->path($attachment->path);
     }
 
     private function formData(int $companyId, ?int $excludeUserId = null): array

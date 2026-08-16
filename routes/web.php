@@ -31,6 +31,8 @@ Route::middleware('auth')->group(function (): void {
     Route::put('/tasks/{task}', [TaskController::class, 'update'])->name('tasks.update');
     Route::delete('/tasks/{task}', [TaskController::class, 'destroy'])->name('tasks.destroy');
     Route::get('/tasks/{task}', [TaskController::class, 'show'])->name('tasks.show');
+    Route::get('/task-attachments/{attachment}/view', [TaskController::class, 'viewAttachment'])->name('task-attachments.view');
+    Route::get('/task-attachments/{attachment}/download', [TaskController::class, 'downloadAttachment'])->name('task-attachments.download');
     Route::post('/tasks/{task}/comments', [TaskController::class, 'comment'])->name('tasks.comments.store');
     Route::post('/tasks/{task}/complete', [TaskController::class, 'complete'])->name('tasks.complete');
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');

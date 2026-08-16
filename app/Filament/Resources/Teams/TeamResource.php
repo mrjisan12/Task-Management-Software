@@ -10,6 +10,7 @@ use App\Filament\Resources\Teams\Schemas\TeamForm;
 use App\Filament\Resources\Teams\Schemas\TeamInfolist;
 use App\Filament\Resources\Teams\Tables\TeamsTable;
 use App\Models\Team;
+use App\Support\AdminCompanyScope;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -41,6 +42,11 @@ class TeamResource extends Resource
         return TeamsTable::configure($table);
     }
 
+    public static function getEloquentQuery(): Builder
+    {
+        return AdminCompanyScope::companyQuery(parent::getEloquentQuery());
+    }
+
     public static function getRelations(): array
     {
         return [
@@ -60,7 +66,7 @@ class TeamResource extends Resource
 
     public static function getRecordRouteBindingEloquentQuery(): Builder
     {
-        return parent::getRecordRouteBindingEloquentQuery()
+        return AdminCompanyScope::companyQuery(parent::getRecordRouteBindingEloquentQuery())
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ]);

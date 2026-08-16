@@ -33,8 +33,18 @@ class User extends Authenticatable implements FilamentUser
 
     public function canAccessPanel(Panel $panel): bool
     {
-        return $this->is_active !== false
-            && $this->hasAnyRole(['super_admin', 'platform_admin', 'company_admin']);
+        if ($this->is_active === false) {
+            return false;
+        }
+
+        if ($this->hasAnyRole(['super_admin', 'platform_admin'])) {
+            return true;
+        }
+
+        return $this->hasRole('company_admin')
+            && $this->companyMemberships()
+                ->where('status', 'active')
+                ->exists();
     }
 
     public function companies(): BelongsToMany

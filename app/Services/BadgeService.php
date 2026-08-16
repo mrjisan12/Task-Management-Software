@@ -16,10 +16,7 @@ class BadgeService
     {
         $earned = [];
 
-        $badges = Badge::query()
-            ->where(function ($query) use ($company): void {
-                $query->where('company_id', $company->id)->orWhereNull('company_id');
-            })
+        $badges = $this->badgesFor($company)
             ->where('is_active', true)
             ->get();
 
@@ -65,5 +62,16 @@ class BadgeService
                 ->value('monthly_points') >= $threshold,
             default => false,
         };
+    }
+
+    private function badgesFor(Company $company)
+    {
+        $hasCompanyBadges = Badge::query()
+            ->where('company_id', $company->id)
+            ->where('is_active', true)
+            ->exists();
+
+        return Badge::query()
+            ->where('company_id', $hasCompanyBadges ? $company->id : null);
     }
 }

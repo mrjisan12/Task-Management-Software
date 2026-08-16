@@ -8,11 +8,13 @@ use App\Filament\Resources\Badges\Pages\ListBadges;
 use App\Filament\Resources\Badges\Schemas\BadgeForm;
 use App\Filament\Resources\Badges\Tables\BadgesTable;
 use App\Models\Badge;
+use App\Support\AdminCompanyScope;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class BadgeResource extends Resource
 {
@@ -28,6 +30,16 @@ class BadgeResource extends Resource
     public static function table(Table $table): Table
     {
         return BadgesTable::configure($table);
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return AdminCompanyScope::companyOrGlobalQuery(parent::getEloquentQuery());
+    }
+
+    public static function getRecordRouteBindingEloquentQuery(): Builder
+    {
+        return AdminCompanyScope::companyOrGlobalQuery(parent::getRecordRouteBindingEloquentQuery());
     }
 
     public static function getRelations(): array

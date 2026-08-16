@@ -10,11 +10,13 @@ use App\Filament\Resources\UserAchievements\Schemas\UserAchievementForm;
 use App\Filament\Resources\UserAchievements\Schemas\UserAchievementInfolist;
 use App\Filament\Resources\UserAchievements\Tables\UserAchievementsTable;
 use App\Models\UserAchievement;
+use App\Support\AdminCompanyScope;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class UserAchievementResource extends Resource
 {
@@ -35,6 +37,36 @@ class UserAchievementResource extends Resource
     public static function table(Table $table): Table
     {
         return UserAchievementsTable::configure($table);
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return AdminCompanyScope::isPlatformAdmin();
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return AdminCompanyScope::companyQuery(parent::getEloquentQuery());
+    }
+
+    public static function canCreate(): bool
+    {
+        return AdminCompanyScope::isPlatformAdmin();
+    }
+
+    public static function canEdit($record): bool
+    {
+        return AdminCompanyScope::isPlatformAdmin();
+    }
+
+    public static function canDelete($record): bool
+    {
+        return AdminCompanyScope::isPlatformAdmin();
+    }
+
+    public static function getRecordRouteBindingEloquentQuery(): Builder
+    {
+        return AdminCompanyScope::companyQuery(parent::getRecordRouteBindingEloquentQuery());
     }
 
     public static function getRelations(): array

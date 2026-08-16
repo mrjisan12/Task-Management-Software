@@ -10,7 +10,7 @@
             <h1 class="title">Edit Task</h1>
             <p class="subtitle">{{ $company->name }}</p>
 
-            <form method="POST" action="{{ route('tasks.update', $task) }}">
+            <form method="POST" action="{{ route('tasks.update', $task) }}" enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
 
@@ -94,6 +94,14 @@
                     <label class="label" for="due_at">Due Date and Time</label>
                     <input class="input @error('due_at') error-input @enderror" id="due_at" name="due_at" type="datetime-local" min="{{ $minDueAt }}" value="{{ old('due_at', $task->due_at?->format('Y-m-d\TH:i')) }}">
                     @error('due_at') <div class="error">{{ $message }}</div> @enderror
+                </div>
+
+                <div class="field">
+                    <label class="label" for="attachments">Add Attachments</label>
+                    <input class="input file-input @error('attachments') error-input @enderror @error('attachments.*') error-input @enderror" id="attachments" name="attachments[]" type="file" multiple>
+                    <p class="subtitle">Upload more images or files, up to 12 files and 10 MB each.</p>
+                    @error('attachments') <div class="error">{{ $message }}</div> @enderror
+                    @error('attachments.*') <div class="error">{{ $message }}</div> @enderror
                 </div>
 
                 <div class="field">

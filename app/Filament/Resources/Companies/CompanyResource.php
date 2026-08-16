@@ -10,6 +10,7 @@ use App\Filament\Resources\Companies\Schemas\CompanyForm;
 use App\Filament\Resources\Companies\Schemas\CompanyInfolist;
 use App\Filament\Resources\Companies\Tables\CompaniesTable;
 use App\Models\Company;
+use App\Support\AdminCompanyScope;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -43,6 +44,40 @@ class CompanyResource extends Resource
         return CompaniesTable::configure($table);
     }
 
+    public static function getEloquentQuery(): Builder
+    {
+        if (AdminCompanyScope::isPlatformAdmin()) {
+            return parent::getEloquentQuery();
+        }
+
+        return parent::getEloquentQuery()->whereKey(AdminCompanyScope::companyId() ?: 0);
+    }
+
+    public static function canCreate(): bool
+    {
+        return AdminCompanyScope::isPlatformAdmin();
+    }
+
+    public static function canDelete($record): bool
+    {
+        return AdminCompanyScope::isPlatformAdmin();
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return AdminCompanyScope::isPlatformAdmin();
+    }
+
+    public static function canForceDelete($record): bool
+    {
+        return AdminCompanyScope::isPlatformAdmin();
+    }
+
+    public static function canForceDeleteAny(): bool
+    {
+        return AdminCompanyScope::isPlatformAdmin();
+    }
+
     public static function getRelations(): array
     {
         return [
@@ -62,9 +97,13 @@ class CompanyResource extends Resource
 
     public static function getRecordRouteBindingEloquentQuery(): Builder
     {
-        return parent::getRecordRouteBindingEloquentQuery()
+        $query = parent::getRecordRouteBindingEloquentQuery()
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ]);
+
+        return AdminCompanyScope::isPlatformAdmin()
+            ? $query
+            : $query->whereKey(AdminCompanyScope::companyId() ?: 0);
     }
 }

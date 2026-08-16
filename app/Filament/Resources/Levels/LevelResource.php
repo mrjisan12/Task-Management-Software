@@ -8,11 +8,13 @@ use App\Filament\Resources\Levels\Pages\ListLevels;
 use App\Filament\Resources\Levels\Schemas\LevelForm;
 use App\Filament\Resources\Levels\Tables\LevelsTable;
 use App\Models\Level;
+use App\Support\AdminCompanyScope;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class LevelResource extends Resource
 {
@@ -28,6 +30,16 @@ class LevelResource extends Resource
     public static function table(Table $table): Table
     {
         return LevelsTable::configure($table);
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return AdminCompanyScope::companyOrGlobalQuery(parent::getEloquentQuery());
+    }
+
+    public static function getRecordRouteBindingEloquentQuery(): Builder
+    {
+        return AdminCompanyScope::companyOrGlobalQuery(parent::getRecordRouteBindingEloquentQuery());
     }
 
     public static function getRelations(): array

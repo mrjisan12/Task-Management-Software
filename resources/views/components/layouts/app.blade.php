@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ config('app.name', 'Task Management') }}</title>
+    <script>
+        window.__initialRewardPopups = @json(session('reward_popups', []));
+    </script>
     @vite(['resources/js/app.js'])
     <style>
         :root {
@@ -278,6 +281,10 @@
         .span-4 { grid-column: span 4; }
         .span-8 { grid-column: span 8; }
         .span-12 { grid-column: span 12; }
+
+        .centered-panel {
+            grid-column: 3 / span 8;
+        }
 
         .title {
             margin: 0;
@@ -763,6 +770,172 @@
 
         .activity-panel {
             background: linear-gradient(180deg, #ffffff, #f8fafc);
+        }
+
+        .attachment-panel {
+            background: linear-gradient(180deg, #ffffff, #f8fafc);
+        }
+
+        .attachment-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 12px;
+        }
+
+        .attachment-thumb {
+            position: relative;
+            aspect-ratio: 4 / 3;
+            overflow: hidden;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: #f8fafc;
+            cursor: pointer;
+        }
+
+        .attachment-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 160ms ease;
+        }
+
+        .attachment-thumb:hover img {
+            transform: scale(1.04);
+        }
+
+        .attachment-thumb span {
+            position: absolute;
+            left: 8px;
+            top: 8px;
+            min-width: 26px;
+            height: 26px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 999px;
+            background: rgba(15, 23, 42, 0.72);
+            color: white;
+            font-size: 12px;
+            font-weight: 900;
+        }
+
+        .attachment-files {
+            display: grid;
+            gap: 10px;
+            margin-top: 14px;
+        }
+
+        .attachment-file {
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr) auto;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: white;
+        }
+
+        .attachment-file:hover {
+            border-color: #bfdbfe;
+            box-shadow: 0 10px 24px rgba(37, 99, 235, 0.08);
+        }
+
+        .attachment-file-icon {
+            width: 44px;
+            height: 44px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            background: #eef2ff;
+            color: #3730a3;
+            font-size: 11px;
+            font-weight: 900;
+        }
+
+        .attachment-file strong,
+        .attachment-file small {
+            display: block;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .attachment-file small {
+            margin-top: 3px;
+            color: var(--muted);
+        }
+
+        .attachment-file em {
+            color: #1d4ed8;
+            font-style: normal;
+            font-weight: 900;
+        }
+
+        .file-input {
+            height: auto;
+            min-height: 42px;
+            padding: 9px 12px;
+        }
+
+        .image-lightbox {
+            position: fixed;
+            inset: 0;
+            z-index: 90;
+            display: grid;
+            grid-template-rows: auto minmax(0, 1fr);
+            gap: 12px;
+            padding: 18px;
+            background: rgba(15, 23, 42, 0.44);
+            backdrop-filter: blur(10px);
+        }
+
+        .image-lightbox-toolbar {
+            justify-self: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 8px;
+            background: rgba(15, 23, 42, 0.72);
+            color: white;
+            box-shadow: 0 16px 40px rgba(15, 23, 42, 0.26);
+        }
+
+        .image-lightbox-toolbar button,
+        .image-lightbox-toolbar a {
+            min-height: 34px;
+            padding: 0 11px;
+            border: 0;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.14);
+            color: white;
+            font: inherit;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .image-lightbox-toolbar button:disabled {
+            cursor: not-allowed;
+            opacity: 0.42;
+        }
+
+        .image-lightbox-stage {
+            min-height: 0;
+            display: grid;
+            place-items: center;
+            overflow: auto;
+        }
+
+        .image-lightbox-stage img {
+            max-width: 94vw;
+            max-height: 82vh;
+            object-fit: contain;
+            transform-origin: center center;
+            transition: transform 140ms ease;
         }
 
         .comment-feed {
@@ -1558,6 +1731,7 @@
 
         @media (max-width: 760px) {
             .span-4, .span-8, .dashboard-hero, .join-card { grid-column: span 12; }
+            .centered-panel { grid-column: span 12; }
             .topbar-inner {
                 height: auto;
                 padding: 12px 0;
@@ -1654,6 +1828,22 @@
                 flex-direction: column;
             }
             .reward-actions .button { width: 100%; }
+            .attachment-gallery {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+            .attachment-file {
+                grid-template-columns: auto minmax(0, 1fr);
+            }
+            .attachment-file em {
+                grid-column: 2;
+            }
+            .image-lightbox {
+                padding: 10px;
+            }
+            .image-lightbox-toolbar {
+                width: 100%;
+                flex-wrap: wrap;
+            }
         }
     </style>
 </head>

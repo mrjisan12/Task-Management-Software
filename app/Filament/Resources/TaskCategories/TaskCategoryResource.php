@@ -8,11 +8,13 @@ use App\Filament\Resources\TaskCategories\Pages\ListTaskCategories;
 use App\Filament\Resources\TaskCategories\Schemas\TaskCategoryForm;
 use App\Filament\Resources\TaskCategories\Tables\TaskCategoriesTable;
 use App\Models\TaskCategory;
+use App\Support\AdminCompanyScope;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class TaskCategoryResource extends Resource
 {
@@ -28,6 +30,16 @@ class TaskCategoryResource extends Resource
     public static function table(Table $table): Table
     {
         return TaskCategoriesTable::configure($table);
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return AdminCompanyScope::companyQuery(parent::getEloquentQuery());
+    }
+
+    public static function getRecordRouteBindingEloquentQuery(): Builder
+    {
+        return AdminCompanyScope::companyQuery(parent::getRecordRouteBindingEloquentQuery());
     }
 
     public static function getRelations(): array

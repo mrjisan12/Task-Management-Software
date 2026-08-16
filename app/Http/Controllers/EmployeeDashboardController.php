@@ -104,28 +104,19 @@ class EmployeeDashboardController extends Controller
                 ->where('company_id', $company->id)
                 ->pluck('achievement_id');
 
-            $availableBadges = Badge::query()
-                ->where(function ($query) use ($company): void {
-                    $query->where('company_id', $company->id)->orWhereNull('company_id');
-                })
+            $availableBadges = $this->badgesFor($company)
                 ->where('is_active', true)
                 ->whereNotIn('id', $earnedBadgeIds)
                 ->orderBy('name')
                 ->get();
 
-            $availableAchievements = Achievement::query()
-                ->where(function ($query) use ($company): void {
-                    $query->where('company_id', $company->id)->orWhereNull('company_id');
-                })
+            $availableAchievements = $this->achievementsFor($company)
                 ->where('is_active', true)
                 ->whereNotIn('id', $earnedAchievementIds)
                 ->orderBy('name')
                 ->get();
 
-            $availableLevels = Level::query()
-                ->where(function ($query) use ($company): void {
-                    $query->where('company_id', $company->id)->orWhereNull('company_id');
-                })
+            $availableLevels = $this->levelsFor($company)
                 ->where('is_active', true)
                 ->orderBy('required_xp')
                 ->get();
@@ -169,5 +160,38 @@ class EmployeeDashboardController extends Controller
             'leaderboardEntries' => $leaderboardEntries,
             'monthlyRank' => $monthlyRank,
         ]);
+    }
+
+    private function badgesFor($company)
+    {
+        $hasCompanyBadges = Badge::query()
+            ->where('company_id', $company->id)
+            ->where('is_active', true)
+            ->exists();
+
+        return Badge::query()
+            ->where('company_id', $hasCompanyBadges ? $company->id : null);
+    }
+
+    private function achievementsFor($company)
+    {
+        $hasCompanyAchievements = Achievement::query()
+            ->where('company_id', $company->id)
+            ->where('is_active', true)
+            ->exists();
+
+        return Achievement::query()
+            ->where('company_id', $hasCompanyAchievements ? $company->id : null);
+    }
+
+    private function levelsFor($company)
+    {
+        $hasCompanyLevels = Level::query()
+            ->where('company_id', $company->id)
+            ->where('is_active', true)
+            ->exists();
+
+        return Level::query()
+            ->where('company_id', $hasCompanyLevels ? $company->id : null);
     }
 }
