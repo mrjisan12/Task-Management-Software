@@ -71,4 +71,22 @@ class UserResource extends Resource
                 SoftDeletingScope::class,
             ]);
     }
+
+    public static function canEdit($record): bool
+    {
+        if (AdminCompanyScope::isPlatformAdmin()) {
+            return true;
+        }
+
+        return ! $record->hasAnyRole(['super_admin', 'platform_admin']);
+    }
+
+    public static function canDelete($record): bool
+    {
+        if (AdminCompanyScope::isPlatformAdmin()) {
+            return true;
+        }
+
+        return ! $record->hasAnyRole(['super_admin', 'platform_admin']);
+    }
 }

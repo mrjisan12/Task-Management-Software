@@ -63,9 +63,12 @@ class AdminCompanyScope
             return $query;
         }
 
-        return $query->whereHas('companyMemberships', fn (Builder $membershipQuery) => $membershipQuery
-            ->where('company_id', static::companyId() ?: 0)
-            ->where('status', 'active'));
+        return $query
+            ->whereDoesntHave('roles', fn (Builder $roleQuery) => $roleQuery
+                ->whereIn('name', ['super_admin', 'platform_admin']))
+            ->whereHas('companyMemberships', fn (Builder $membershipQuery) => $membershipQuery
+                ->where('company_id', static::companyId() ?: 0)
+                ->where('status', 'active'));
     }
 
     public static function companySelect(Select $select, bool $required = true): Select
